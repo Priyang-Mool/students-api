@@ -7,13 +7,15 @@ import (
 	"io"            // Package for I/O primitives
 	"log/slog"      // Package for structured logging
 	"net/http"      // Package for HTTP client and server
-	"github.com/Priyang1310/Students-API-GO/internal/types" // Importing custom types
+
+	"github.com/Priyang1310/Students-API-GO/internal/storage"
+	"github.com/Priyang1310/Students-API-GO/internal/types"          // Importing custom types
 	"github.com/Priyang1310/Students-API-GO/internal/utils/response" // Importing response utility functions
-	"github.com/go-playground/validator/v10" // Importing the validator package for struct validation
+	"github.com/go-playground/validator/v10"                         // Importing the validator package for struct validation
 )
 
 // New returns an HTTP handler function for creating a new student
-func New() http.HandlerFunc {
+func New(storage storage.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		var student types.Student // Declare a variable to hold the student data
@@ -38,10 +40,20 @@ func New() http.HandlerFunc {
 			return // Ensure to return after sending the response
 		}
 
-		// Log the creation of a new student
-		slog.Info("creating a student")
+		lastID, err := storage.CreateStudent(
+			student.Name,
+			student.Email,
+			student.Age,
+		)
+
+		if err != nil {
+			response.WriteJSON(w, http.StatusInternalServerError, err)
+			return
+		}
+
+		slog.Info("User Created Successfully!")
 
 		// Respond with a success message and HTTP status 201 Created
-		response.WriteJSON(w, http.StatusCreated, map[string]string{"success": "OK"})
+		response.WriteJSON(w, http.StatusCreated, map[string]int64{"id": lastID})
 	}
 }

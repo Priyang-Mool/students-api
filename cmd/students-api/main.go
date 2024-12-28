@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/Priyang1310/Students-API-GO/internal/config"
 	"github.com/Priyang1310/Students-API-GO/internal/http/handlers/student"
+	"github.com/Priyang1310/Students-API-GO/internal/storage/sqlite"
 )
 
 func main() {
@@ -17,10 +19,18 @@ func main() {
 	cfg := config.MustLoad()
 
 	//database setup
+	storage, err := sqlite.New(cfg)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	slog.Info("Storage Initialized!", slog.String("env", cfg.Env))
+
 	//setup router
 	router := http.NewServeMux()
 
-	router.HandleFunc("POST /api/students", student.New())
+	router.HandleFunc("POST /api/students", student.New(storage))
 
 	// Setup the HTTP server with the specified address and handler
 	server := http.Server{
