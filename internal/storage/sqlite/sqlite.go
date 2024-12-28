@@ -2,9 +2,11 @@ package sqlite
 
 import (
 	"database/sql" // Import the database/sql package for SQL database operations
+	"fmt"
 
 	"github.com/Priyang1310/Students-API-GO/internal/config" // Import the config package for application configuration
-	_ "github.com/mattn/go-sqlite3"                          // Import the SQLite driver for database operations
+	"github.com/Priyang1310/Students-API-GO/internal/types"
+	_ "github.com/mattn/go-sqlite3" // Import the SQLite driver for database operations
 )
 
 // Sqlite struct represents a SQLite database connection
@@ -63,4 +65,26 @@ func (s *Sqlite) CreateStudent(name string, email string, age int) (int64, error
 	}
 
 	return id, nil
+}
+
+func (s *Sqlite) GetStudentById(id int64) (types.Student, error) {
+	stmt, err := s.Db.Prepare("SELECT * FROM students WHERE id = ?")
+	if err != nil {
+		return types.Student{}, err
+	}
+
+	defer stmt.Close()
+
+	var student types.Student
+
+	err = stmt.QueryRow(id).Scan(&student.Id, &student.Name, &student.Email, &student.Age)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return types.Student{}, fmt.Errorf("stduent not found with id %s", fmt.Sprint(id))
+		}
+		return types.Student{}, err
+	}
+
+	return student,nil
 }

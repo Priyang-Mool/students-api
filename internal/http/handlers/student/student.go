@@ -5,8 +5,10 @@ import (
 	"errors"        // Package for error handling
 	"fmt"           // Package for formatted I/O
 	"io"            // Package for I/O primitives
-	"log/slog"      // Package for structured logging
-	"net/http"      // Package for HTTP client and server
+	"log"
+	"log/slog" // Package for structured logging
+	"net/http" // Package for HTTP client and server
+	"strconv"
 
 	"github.com/Priyang1310/Students-API-GO/internal/storage"
 	"github.com/Priyang1310/Students-API-GO/internal/types"          // Importing custom types
@@ -55,5 +57,28 @@ func New(storage storage.Storage) http.HandlerFunc {
 
 		// Respond with a success message and HTTP status 201 Created
 		response.WriteJSON(w, http.StatusCreated, map[string]int64{"id": lastID})
+	}
+}
+
+func GetById(storage storage.Storage) http.HandlerFunc{
+	return func(w http.ResponseWriter, r *http.Request) {
+		id:=r.PathValue("id")
+		slog.Info("Getting a student!",slog.String("id",id))
+
+		intId,err:=strconv.ParseInt(id,10,64)
+		if(err!=nil){
+			log.Fatal("Error during conversion from tring to int64")
+			return
+		}
+
+		student,e:=storage.GetStudentById(intId)
+		if(e!=nil){
+			response.WriteJSON(w, http.StatusInternalServerError, response.GeneralError(e))
+			return
+		}
+
+		response.WriteJSON(w,http.StatusOK,student)
+
+		return
 	}
 }
