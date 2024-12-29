@@ -3,6 +3,7 @@ package sqlite
 import (
 	"database/sql" // Import the database/sql package for SQL database operations
 	"fmt"
+	"log/slog"
 
 	"github.com/Priyang1310/Students-API-GO/internal/config" // Import the config package for application configuration
 	"github.com/Priyang1310/Students-API-GO/internal/types"
@@ -86,5 +87,36 @@ func (s *Sqlite) GetStudentById(id int64) (types.Student, error) {
 		return types.Student{}, err
 	}
 
-	return student,nil
+	return student, nil
+}
+
+func (s *Sqlite) GetAllStudents() ([]types.Student, error) {
+	stmt, err := s.Db.Prepare("SELECT id,name,email,age FROM students")
+	slog.Info("Get all students method called")
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query()
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var students []types.Student
+
+	for rows.Next() {
+		var student types.Student
+
+		err := rows.Scan(&student.Id, &student.Name, &student.Email, &student.Age)
+		if err != nil {
+			return nil, err
+		}
+
+		students = append(students, student)
+	}
+
+	return students, nil
 }

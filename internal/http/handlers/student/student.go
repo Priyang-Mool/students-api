@@ -60,25 +60,37 @@ func New(storage storage.Storage) http.HandlerFunc {
 	}
 }
 
-func GetById(storage storage.Storage) http.HandlerFunc{
+func GetById(storage storage.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		id:=r.PathValue("id")
-		slog.Info("Getting a student!",slog.String("id",id))
+		id := r.PathValue("id")
+		slog.Info("Getting a student!", slog.String("id", id))
 
-		intId,err:=strconv.ParseInt(id,10,64)
-		if(err!=nil){
+		intId, err := strconv.ParseInt(id, 10, 64)
+		if err != nil {
 			log.Fatal("Error during conversion from tring to int64")
 			return
 		}
 
-		student,e:=storage.GetStudentById(intId)
-		if(e!=nil){
+		student, e := storage.GetStudentById(intId)
+		if e != nil {
 			response.WriteJSON(w, http.StatusInternalServerError, response.GeneralError(e))
 			return
 		}
 
-		response.WriteJSON(w,http.StatusOK,student)
+		response.WriteJSON(w, http.StatusOK, student)
+	}
+}
 
-		return
+func GetAll(storage storage.Storage) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		slog.Info("Getting all students")
+
+		students, err := storage.GetAllStudents()
+		if err != nil {
+			response.WriteJSON(w, http.StatusInternalServerError, err)
+			return
+		}
+
+		response.WriteJSON(w, http.StatusOK, students)
 	}
 }
