@@ -10,12 +10,15 @@ import (
 )
 
 // Response struct defines the structure of the JSON response
+// It contains two fields: Status and Error
 type Response struct {
 	Status string // Status of the response (e.g., "Error" or "Success")
 	Error  string // Error message if applicable
 }
 
 // WriteJSON writes a JSON response to the http.ResponseWriter
+// It takes three parameters: http.ResponseWriter, HTTP status code, and data to be written
+// It sets the Content-Type header to application/json, writes the HTTP status code, and encodes the data as JSON
 func WriteJSON(w http.ResponseWriter, status int, data interface{}) error {
 	// Set the Content-Type header to application/json
 	w.Header().Set("Content-Type", "application/json")
@@ -27,7 +30,9 @@ func WriteJSON(w http.ResponseWriter, status int, data interface{}) error {
 }
 
 // GeneralError creates a generic error response
+// It takes an error as input and returns a Response struct with the error message
 func GeneralError(err error) Response {
+	// Create a Response struct with the error message
 	return Response{
 		Status: "Error", // Set status to "Error"
 		Error:  err.Error(), // Include the error message
@@ -35,8 +40,10 @@ func GeneralError(err error) Response {
 }
 
 // ValidationError creates a validation error response based on validation errors
+// It takes a slice of validation errors as input and returns a Response struct with the error messages
 func ValidationError(errs validator.ValidationErrors) Response {
-	var errMsgs []string // Slice to hold individual error messages
+	// Create a slice to hold individual error messages
+	var errMsgs []string
 
 	// Iterate over each validation error
 	for _, err := range errs {

@@ -17,6 +17,7 @@ type Sqlite struct {
 
 // New function initializes a new Sqlite instance
 // It takes a configuration object as an argument and returns a pointer to Sqlite and an error
+// This function is used to establish a connection to the SQLite database
 func New(cfg *config.Config) (*Sqlite, error) {
 	// Open a new database connection using the SQLite driver and the storage path from the config
 	db, err := sql.Open("sqlite3", cfg.StoragePath)
@@ -44,22 +45,26 @@ func New(cfg *config.Config) (*Sqlite, error) {
 	}, nil
 }
 
+// CreateStudent function creates a new student in the database
+// It takes the student's name, email, and age as arguments and returns the ID of the newly created student and an error
+// This function is used to insert a new student into the 'students' table
 func (s *Sqlite) CreateStudent(name string, email string, age int) (int64, error) {
-
+	// Prepare a SQL statement to insert a new student into the 'students' table
 	stmt, err := s.Db.Prepare("INSERT INTO students (name,email,age) VALUES (?,?,?) ")
-
 	if err != nil {
 		return 0, err
 	}
 
 	defer stmt.Close()
 
+	// Execute the prepared SQL statement with the provided student data
 	result, err := stmt.Exec(name, email, age)
 
 	if err != nil {
 		return 0, err
 	}
 
+	// Get the ID of the newly created student
 	id, err := result.LastInsertId()
 	if err != nil {
 		return 0, err
@@ -68,7 +73,11 @@ func (s *Sqlite) CreateStudent(name string, email string, age int) (int64, error
 	return id, nil
 }
 
+// GetStudentById function retrieves a student from the database by their ID
+// It takes the student's ID as an argument and returns the student data and an error
+// This function is used to select a student from the 'students' table by their ID
 func (s *Sqlite) GetStudentById(id int64) (types.Student, error) {
+	// Prepare a SQL statement to select a student from the 'students' table by their ID
 	stmt, err := s.Db.Prepare("SELECT * FROM students WHERE id = ?")
 	if err != nil {
 		return types.Student{}, err
@@ -76,13 +85,15 @@ func (s *Sqlite) GetStudentById(id int64) (types.Student, error) {
 
 	defer stmt.Close()
 
+	// Execute the prepared SQL statement with the provided student ID
 	var student types.Student
 
 	err = stmt.QueryRow(id).Scan(&student.Id, &student.Name, &student.Email, &student.Age)
 
 	if err != nil {
+		// If the student is not found, return an error
 		if err == sql.ErrNoRows {
-			return types.Student{}, fmt.Errorf("stduent not found with id %s", fmt.Sprint(id))
+			return types.Student{}, fmt.Errorf("student not found with id %s", fmt.Sprint(id))
 		}
 		return types.Student{}, err
 	}
@@ -90,7 +101,11 @@ func (s *Sqlite) GetStudentById(id int64) (types.Student, error) {
 	return student, nil
 }
 
+// GetAllStudents function retrieves all students from the database
+// It returns a slice of student data and an error
+// This function is used to select all students from the 'students' table
 func (s *Sqlite) GetAllStudents() ([]types.Student, error) {
+	// Prepare a SQL statement to select all students from the 'students' table
 	stmt, err := s.Db.Prepare("SELECT id,name,email,age FROM students")
 	slog.Info("Get all students method called")
 	if err != nil {
@@ -98,6 +113,7 @@ func (s *Sqlite) GetAllStudents() ([]types.Student, error) {
 	}
 	defer stmt.Close()
 
+	// Execute the prepared SQL statement
 	rows, err := stmt.Query()
 	if err != nil {
 		return nil, err
@@ -105,8 +121,10 @@ func (s *Sqlite) GetAllStudents() ([]types.Student, error) {
 
 	defer rows.Close()
 
+	// Initialize a slice to store the student data
 	var students []types.Student
 
+	// Iterate over the rows and scan the student data
 	for rows.Next() {
 		var student types.Student
 
@@ -115,13 +133,18 @@ func (s *Sqlite) GetAllStudents() ([]types.Student, error) {
 			return nil, err
 		}
 
+		// Append the student data to the slice
 		students = append(students, student)
 	}
 
 	return students, nil
 }
 
+// UpdateStudent function updates a student in the database
+// It takes the student's ID, name, email, and age as arguments and returns the updated student data and an error
+// This function is used to update a student in the 'students' table
 func (s *Sqlite) UpdateStudent(id int64, name string, email string, age int) (types.Student, error) {
+	// Prepare a SQL statement to update a student in the 'students' table
 	slog.Info("Updating a student")
 	stmt, err := s.Db.Prepare("UPDATE students SET name=?, email=?,age=? WHERE id=?")
 	if err != nil {
@@ -130,21 +153,26 @@ func (s *Sqlite) UpdateStudent(id int64, name string, email string, age int) (ty
 
 	defer stmt.Close()
 
+	// Initialize a student struct to store the updated data
 	var student types.Student
 
+	// Execute the prepared SQL statement with the provided student data
 	result, err := stmt.Exec(name, email, age, id)
 	if err != nil {
 		return types.Student{}, err
 	}
 
+	// Get the number of rows affected by the update
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
 		return types.Student{}, err
 	}
+	// If no rows were affected, return an error
 	if rowsAffected == 0 {
 		return types.Student{}, fmt.Errorf("no rows affected")
 	}
 
+	// Update the student struct with the provided data
 	student.Age = age
 	student.Email = email
 	student.Name = name
@@ -153,14 +181,18 @@ func (s *Sqlite) UpdateStudent(id int64, name string, email string, age int) (ty
 	return student, nil
 }
 
+// DeleteStudentById function deletes a student from the database by their ID
+// It takes the student's ID as an argument and returns an error
+// This function is used to delete a student from the 'students' table by their ID
 func (s *Sqlite) DeleteStudentById(id int64) error {
-
+	// Prepare a SQL statement to delete a student from the 'students' table by their ID
 	slog.Info("Deleting a student")
 	stmt, err := s.Db.Prepare("DELETE FROM students WHERE id=?")
 	if err != nil {
 		return err
 	}
 
+	// Execute the prepared SQL statement with the provided student ID
 	_, err = stmt.Exec(id)
 
 	if err != nil {
@@ -170,13 +202,18 @@ func (s *Sqlite) DeleteStudentById(id int64) error {
 	return nil
 }
 
+// DeleteAllStudents function deletes all students from the database
+// It returns an error
+// This function is used to delete all students from the 'students' table
 func (s *Sqlite) DeleteAllStudents() error {
+	// Prepare a SQL statement to delete all students from the 'students' table
 	stmt, err := s.Db.Prepare("DELETE FROM students")
 
 	if err != nil {
 		return err
 	}
 
+	// Execute the prepared SQL statement
 	_, err = stmt.Exec()
 
 	if err != nil {
