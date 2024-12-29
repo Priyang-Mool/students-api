@@ -150,17 +150,38 @@ func (s *Sqlite) UpdateStudent(id int64, name string, email string, age int) (ty
 	student.Name = name
 	student.Id = id
 
-	// err = stmt.QueryRow(name, email, age, id).Scan(&student.Name, &student.Email, &student.Age)
-	// // fmt.Println(updatedRow)
-
-	// // err = updatedRow.Scan(&student.Name, &student.Email, &student.Age)
-
-	// if err != nil {
-	// 	if err == sql.ErrNoRows {
-	// 		return types.Student{}, fmt.Errorf("student not found with id %s", fmt.Sprint(id))
-	// 	}
-	// 	return types.Student{}, err
-	// }
-
 	return student, nil
+}
+
+func (s *Sqlite) DeleteStudentById(id int64) error {
+
+	slog.Info("Deleting a student")
+	stmt, err := s.Db.Prepare("DELETE FROM students WHERE id=?")
+	if err != nil {
+		return err
+	}
+
+	_, err = stmt.Exec(id)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *Sqlite) DeleteAllStudents() error {
+	stmt, err := s.Db.Prepare("DELETE FROM students")
+
+	if err != nil {
+		return err
+	}
+
+	_, err = stmt.Exec()
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
