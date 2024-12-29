@@ -120,3 +120,47 @@ func (s *Sqlite) GetAllStudents() ([]types.Student, error) {
 
 	return students, nil
 }
+
+func (s *Sqlite) UpdateStudent(id int64, name string, email string, age int) (types.Student, error) {
+	slog.Info("Updating a student")
+	stmt, err := s.Db.Prepare("UPDATE students SET name=?, email=?,age=? WHERE id=?")
+	if err != nil {
+		return types.Student{}, err
+	}
+
+	defer stmt.Close()
+
+	var student types.Student
+
+	result, err := stmt.Exec(name, email, age, id)
+	if err != nil {
+		return types.Student{}, err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return types.Student{}, err
+	}
+	if rowsAffected == 0 {
+		return types.Student{}, fmt.Errorf("no rows affected")
+	}
+
+	student.Age = age
+	student.Email = email
+	student.Name = name
+	student.Id = id
+
+	// err = stmt.QueryRow(name, email, age, id).Scan(&student.Name, &student.Email, &student.Age)
+	// // fmt.Println(updatedRow)
+
+	// // err = updatedRow.Scan(&student.Name, &student.Email, &student.Age)
+
+	// if err != nil {
+	// 	if err == sql.ErrNoRows {
+	// 		return types.Student{}, fmt.Errorf("student not found with id %s", fmt.Sprint(id))
+	// 	}
+	// 	return types.Student{}, err
+	// }
+
+	return student, nil
+}

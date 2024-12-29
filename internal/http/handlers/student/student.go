@@ -94,3 +94,49 @@ func GetAll(storage storage.Storage) http.HandlerFunc {
 		response.WriteJSON(w, http.StatusOK, students)
 	}
 }
+
+func Update(storage storage.Storage) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id := r.PathValue("id")
+		slog.Info("Updating a student with", slog.String("id", id))
+
+		intId, err := strconv.ParseInt(id, 10, 64)
+
+		if err != nil {
+			log.Fatal("error converting string to int")
+			return
+		}
+
+		var student types.Student
+
+		err = json.NewDecoder(r.Body).Decode(&student)
+
+		if err == io.EOF {
+			response.WriteJSON(w, http.StatusInternalServerError, response.GeneralError(err))
+			return
+		}
+
+		if err != nil {
+			response.WriteJSON(w, http.StatusInternalServerError, response.GeneralError(err))
+			return
+		}
+
+		// Validate the student struct using the validator package
+		if err := validator.New().Struct(student); err != nil {
+			// If validation fails, cast the error to ValidationErrors and respond with a validation error
+			validateErr := err.(validator.ValidationErrors)
+			response.WriteJSON(w, http.StatusBadRequest, response.ValidationError(validateErr))
+			return // Ensure to return after sending the response
+		}
+
+		updatedStudent, err := storage.UpdateStudent(intId, student.Name, student.Email, student.Age)
+
+		if err != nil {
+			response.WriteJSON(w, http.StatusInternalServerError, response.GeneralError(err))
+			return
+		}
+
+		slog.Info("Student Updated Successfully!")
+		response.WriteJSON(w, http.StatusOK, updatedStudent)
+	}
+}
